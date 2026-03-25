@@ -236,13 +236,24 @@
         <div class="w-32 h-1 bg-white/30 mx-auto mb-3 rounded-full"></div>
     </div>
 
-    <audio id="saleSfx" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+    <!-- O segredo está aqui: carregar o áudio sem controles de mídia -->
+    <audio id="saleSfx" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
         let intervalId = null;
         let count = 0;
 
-        // Atualizar Relógio
+        // Configuração de áudio para evitar o widget do iOS
+        const audio = document.getElementById('saleSfx');
+        
+        // Impede que o navegador mostre controles de mídia na tela de bloqueio
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'none';
+            navigator.mediaSession.metadata = null;
+        }
+
         function updateTime() {
             const now = new Date();
             const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -252,27 +263,42 @@
         setInterval(updateTime, 1000);
         updateTime();
 
-        // Pedir Permissão (Crítico para iOS)
         async function requestPermission() {
             const permission = await Notification.requestPermission();
             if (permission === "granted") {
+                // Tocar um som silencioso no clique para "desbloquear" o áudio no iOS
+                audio.volume = 0;
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.volume = 1;
+                });
                 alert("Sucesso! Notificações ativas.");
             } else {
                 alert("Precisas de autorizar as notificações nas definições do Safari.");
             }
         }
 
-        // Criar Notificação
         function triggerSale() {
             const product = document.getElementById('productName').value;
             const value = document.getElementById('saleValue').value;
             
-            // Som
-            const sfx = document.getElementById('saleSfx');
-            sfx.currentTime = 0;
-            sfx.play().catch(e => console.log("Som bloqueado pelo navegador"));
+            // Tocar áudio sem ativar o widget de reprodução
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log("Áudio bloqueado"));
+                
+                // Resetar o estado da sessão de mídia imediatamente para não aparecer o player
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.playbackState = 'none';
+                }
+            }
 
-            // Card Visual (Para quando a tela estiver acesa na simulação)
+            // Vibração (Haptic Feedback)
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+            }
+
+            // Card Visual
             const container = document.getElementById('notification-container');
             const card = document.createElement('div');
             card.className = 'kirvano-notification';
@@ -289,16 +315,14 @@
             `;
             container.appendChild(card);
 
-            // Notificação de Sistema (Para tela bloqueada real)
+            // Notificação de Sistema
             if (Notification.permission === "granted") {
-                new Notification("Kirvano: Venda Realizada! 🚀", {
+                new Notification("Venda Realizada! 🚀", {
                     body: `R$ ${value} - ${product}`,
                     icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/4e/0d/914e0db2-167e-4b45-a96d-c5095d539556/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/230x0w.webp",
-                    silent: false
                 });
             }
 
-            // Auto-remover card visual
             setTimeout(() => {
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(-10px) scale(0.95)';
@@ -339,7 +363,6 @@
         function showPreview() { document.getElementById('ios-preview').style.display = 'flex'; }
         function hidePreview() { document.getElementById('ios-preview').style.display = 'none'; }
 
-        // Registo de Service Worker Mínimo para PWA no iOS
         if ('serviceWorker' in navigator) {
             const swCode = "self.addEventListener('fetch', function(event) {});";
             const blob = new Blob([swCode], {type: 'text/javascript'});
