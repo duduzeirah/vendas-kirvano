@@ -7,7 +7,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Kirvano">
     
-    <!-- Ícone oficial para a tela de início -->
     <link rel="apple-touch-icon" href="https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/4e/0d/914e0db2-167e-4b45-a96d-c5095d539556/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/230x0w.webp">
     
     <title>Kirvano Simulator Pro</title>
@@ -33,7 +32,6 @@
             overflow-x: hidden;
         }
 
-        /* NOTIFICAÇÃO ESTILO IOS 17 */
         .kirvano-notification {
             background: var(--ios-bg);
             backdrop-filter: blur(35px) saturate(170%);
@@ -172,22 +170,21 @@
 </head>
 <body>
 
-    <!-- PAINEL DE CONTROLO -->
     <div id="main-ui">
         <div class="p-6">
             <div class="flex items-center gap-3 mb-8">
                 <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-black font-black text-xl">K</div>
-                <h1 class="text-xl font-bold">Configuração Kirvano</h1>
+                <h1 class="text-xl font-bold">Simulador Kirvano</h1>
             </div>
 
             <div class="panel">
                 <div class="input-group">
-                    <label>Nome do Produto</label>
+                    <label>Produto</label>
                     <input type="text" id="productName" value="Método Escala Automática">
                 </div>
                 
                 <div class="input-group">
-                    <label>Valor da Venda (R$)</label>
+                    <label>Valor (R$)</label>
                     <input type="number" id="saleValue" value="97.00">
                 </div>
 
@@ -197,7 +194,7 @@
                         <input type="number" id="intervalTime" value="5">
                     </div>
                     <div class="input-group">
-                        <label>Total de Vendas</label>
+                        <label>Vendas</label>
                         <input type="number" id="totalSales" value="10">
                     </div>
                 </div>
@@ -211,7 +208,7 @@
                 </button>
                 
                 <button id="btnStop" onclick="stopAutomation()" class="btn-stop hidden">
-                    PARAR TUDO
+                    PARAR
                 </button>
 
                 <button onclick="showPreview()" class="w-full mt-8 text-slate-500 text-xs font-medium uppercase tracking-widest opacity-60">
@@ -221,14 +218,11 @@
         </div>
     </div>
 
-    <!-- TELA DE BLOQUEIO SIMULADA -->
     <div id="ios-preview">
         <button class="close-preview" onclick="hidePreview()">Sair</button>
         <div class="lock-time" id="clock-time">12:30</div>
         <div class="lock-date" id="clock-date">Quarta-feira, 25 de Março</div>
-        
         <div id="notification-container" class="mt-auto mb-32 flex flex-col-reverse px-2"></div>
-
         <div class="mt-auto pb-10 flex justify-between px-12 opacity-50">
             <i class="fas fa-flashlight text-2xl"></i>
             <i class="fas fa-camera text-2xl"></i>
@@ -236,7 +230,7 @@
         <div class="w-32 h-1 bg-white/30 mx-auto mb-3 rounded-full"></div>
     </div>
 
-    <!-- O segredo está aqui: carregar o áudio sem controles de mídia -->
+    <!-- Áudio otimizado -->
     <audio id="saleSfx" preload="auto">
         <source src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" type="audio/mpeg">
     </audio>
@@ -244,14 +238,15 @@
     <script>
         let intervalId = null;
         let count = 0;
-
-        // Configuração de áudio para evitar o widget do iOS
         const audio = document.getElementById('saleSfx');
-        
-        // Impede que o navegador mostre controles de mídia na tela de bloqueio
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'none';
-            navigator.mediaSession.metadata = null;
+
+        // FUNÇÃO CRÍTICA: Mata a sessão de média para o iOS não mostrar o widget
+        function killMediaWidget() {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'none';
+                // Definir metadados nulos ajuda a limpar o widget mais rápido
+                navigator.mediaSession.metadata = null;
+            }
         }
 
         function updateTime() {
@@ -266,15 +261,15 @@
         async function requestPermission() {
             const permission = await Notification.requestPermission();
             if (permission === "granted") {
-                // Tocar um som silencioso no clique para "desbloquear" o áudio no iOS
-                audio.volume = 0;
+                audio.muted = true;
                 audio.play().then(() => {
                     audio.pause();
-                    audio.volume = 1;
+                    audio.muted = false;
+                    killMediaWidget();
                 });
-                alert("Sucesso! Notificações ativas.");
+                alert("Notificações ativas!");
             } else {
-                alert("Precisas de autorizar as notificações nas definições do Safari.");
+                alert("Ative as notificações no Safari.");
             }
         }
 
@@ -282,23 +277,21 @@
             const product = document.getElementById('productName').value;
             const value = document.getElementById('saleValue').value;
             
-            // Tocar áudio sem ativar o widget de reprodução
             if (audio) {
                 audio.currentTime = 0;
-                audio.play().catch(e => console.log("Áudio bloqueado"));
+                audio.play().catch(() => {});
                 
-                // Resetar o estado da sessão de mídia imediatamente para não aparecer o player
-                if ('mediaSession' in navigator) {
-                    navigator.mediaSession.playbackState = 'none';
-                }
+                // Força o fecho do widget logo após o som começar/terminar
+                setTimeout(killMediaWidget, 100);
+                setTimeout(killMediaWidget, 500);
+                setTimeout(killMediaWidget, 1000);
             }
 
-            // Vibração (Haptic Feedback)
             if (navigator.vibrate) {
                 navigator.vibrate([100, 50, 100]);
             }
 
-            // Card Visual
+            // Simulação interna
             const container = document.getElementById('notification-container');
             const card = document.createElement('div');
             card.className = 'kirvano-notification';
@@ -315,10 +308,10 @@
             `;
             container.appendChild(card);
 
-            // Notificação de Sistema
+            // Notificação de Sistema (Tela Bloqueada)
             if (Notification.permission === "granted") {
-                new Notification("Venda Realizada! 🚀", {
-                    body: `R$ ${value} - ${product}`,
+                new Notification("Kirvano", {
+                    body: `Venda Realizada! 🚀\nVocê vendeu ${product} no valor de R$ ${value}.`,
                     icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/4e/0d/914e0db2-167e-4b45-a96d-c5095d539556/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/230x0w.webp",
                 });
             }
@@ -335,8 +328,6 @@
             const time = parseInt(document.getElementById('intervalTime').value) * 1000;
             const total = parseInt(document.getElementById('totalSales').value);
             
-            if (time < 1000) return alert("O intervalo mínimo é 1 segundo.");
-
             count = 0;
             document.getElementById('btnStart').classList.add('hidden');
             document.getElementById('btnStop').classList.remove('hidden');
@@ -358,17 +349,11 @@
             clearInterval(intervalId);
             document.getElementById('btnStart').classList.remove('hidden');
             document.getElementById('btnStop').classList.add('hidden');
+            killMediaWidget();
         }
 
         function showPreview() { document.getElementById('ios-preview').style.display = 'flex'; }
         function hidePreview() { document.getElementById('ios-preview').style.display = 'none'; }
-
-        if ('serviceWorker' in navigator) {
-            const swCode = "self.addEventListener('fetch', function(event) {});";
-            const blob = new Blob([swCode], {type: 'text/javascript'});
-            const url = URL.createObjectURL(blob);
-            navigator.serviceWorker.register(url);
-        }
     </script>
 </body>
 </html>
