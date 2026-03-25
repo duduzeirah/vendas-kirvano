@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kirvano">
+    
+    <!-- Ícone oficial para a tela de início -->
+    <link rel="apple-touch-icon" href="https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/4e/0d/914e0db2-167e-4b45-a96d-c5095d539556/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/230x0w.webp">
+    
+    <title>Kirvano Simulator Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --ios-bg: rgba(28, 28, 28, 0.75);
+            --kirvano-black: #000000;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #000;
+            color: white;
+            margin: 0;
+            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* NOTIFICAÇÃO ESTILO IOS 17 */
+        .kirvano-notification {
+            background: var(--ios-bg);
+            backdrop-filter: blur(35px) saturate(170%);
+            -webkit-backdrop-filter: blur(35px) saturate(170%);
+            border-radius: 22px;
+            padding: 12px 14px;
+            margin: 8px 12px;
+            border: 0.4px solid rgba(255, 255, 255, 0.12);
+            animation: iosEntrance 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+        }
+
+        @keyframes iosEntrance {
+            0% { transform: translateY(30px) scale(0.9); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .kirvano-app-icon {
+            background-color: var(--kirvano-black);
+            border-radius: 4.5px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+            color: white;
+            border: 0.1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .app-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.55);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .notification-time { font-size: 10px; color: rgba(255, 255, 255, 0.35); margin-left: auto; }
+        .notification-title { font-size: 14.5px; font-weight: 700; color: #ffffff; margin-bottom: 1px; }
+        .notification-body { font-size: 13.5px; font-weight: 400; color: rgba(255, 255, 255, 0.9); line-height: 1.3; }
+        .highlight-green { color: #30D158; font-weight: 600; }
+
+        .panel {
+            background: #111;
+            border-radius: 30px;
+            margin: 15px;
+            padding: 25px;
+            border: 1px solid #222;
+        }
+
+        .input-group {
+            background: #1c1c1e;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 10px;
+            color: #8e8e93;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .input-group input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: #ffffff;
+            color: #000;
+            font-weight: 700;
+            padding: 18px;
+            border-radius: 16px;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .btn-stop {
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+            font-weight: 600;
+            padding: 18px;
+            border-radius: 16px;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+        }
+
+        #ios-preview {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1635583023812-32a22596956f?q=80&w=2574&auto=format&fit=crop');
+            background-size: cover;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            padding-top: 60px;
+        }
+
+        .lock-time { font-size: 80px; font-weight: 200; text-align: center; margin-top: 20px; }
+        .lock-date { font-size: 19px; font-weight: 500; text-align: center; margin-top: -10px; opacity: 0.8; }
+        
+        .close-preview {
+            position: absolute;
+            top: 40px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 110;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PAINEL DE CONTROLO -->
+    <div id="main-ui">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-black font-black text-xl">K</div>
+                <h1 class="text-xl font-bold">Configuração Kirvano</h1>
+            </div>
+
+            <div class="panel">
+                <div class="input-group">
+                    <label>Nome do Produto</label>
+                    <input type="text" id="productName" value="Método Escala Automática">
+                </div>
+                
+                <div class="input-group">
+                    <label>Valor da Venda (R$)</label>
+                    <input type="number" id="saleValue" value="97.00">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="input-group">
+                        <label>Intervalo (Seg)</label>
+                        <input type="number" id="intervalTime" value="5">
+                    </div>
+                    <div class="input-group">
+                        <label>Total de Vendas</label>
+                        <input type="number" id="totalSales" value="10">
+                    </div>
+                </div>
+
+                <button onclick="requestPermission()" class="w-full text-[10px] text-blue-500 mb-4 font-bold uppercase tracking-wider">
+                    <i class="fas fa-bell mr-1"></i> Passo 1: Autorizar Notificações
+                </button>
+
+                <button id="btnStart" onclick="startAutomation()" class="btn-primary">
+                    <i class="fas fa-play mr-2"></i> INICIAR FLUXO
+                </button>
+                
+                <button id="btnStop" onclick="stopAutomation()" class="btn-stop hidden">
+                    PARAR TUDO
+                </button>
+
+                <button onclick="showPreview()" class="w-full mt-8 text-slate-500 text-xs font-medium uppercase tracking-widest opacity-60">
+                    Testar Visual da Tela Bloqueada
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DE BLOQUEIO SIMULADA -->
+    <div id="ios-preview">
+        <button class="close-preview" onclick="hidePreview()">Sair</button>
+        <div class="lock-time" id="clock-time">12:30</div>
+        <div class="lock-date" id="clock-date">Quarta-feira, 25 de Março</div>
+        
+        <div id="notification-container" class="mt-auto mb-32 flex flex-col-reverse px-2"></div>
+
+        <div class="mt-auto pb-10 flex justify-between px-12 opacity-50">
+            <i class="fas fa-flashlight text-2xl"></i>
+            <i class="fas fa-camera text-2xl"></i>
+        </div>
+        <div class="w-32 h-1 bg-white/30 mx-auto mb-3 rounded-full"></div>
+    </div>
+
+    <audio id="saleSfx" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+
+    <script>
+        let intervalId = null;
+        let count = 0;
+
+        // Atualizar Relógio
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('clock-time').textContent = timeStr;
+            document.getElementById('clock-date').textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Pedir Permissão (Crítico para iOS)
+        async function requestPermission() {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                alert("Sucesso! Notificações ativas.");
+            } else {
+                alert("Precisas de autorizar as notificações nas definições do Safari.");
+            }
+        }
+
+        // Criar Notificação
+        function triggerSale() {
+            const product = document.getElementById('productName').value;
+            const value = document.getElementById('saleValue').value;
+            
+            // Som
+            const sfx = document.getElementById('saleSfx');
+            sfx.currentTime = 0;
+            sfx.play().catch(e => console.log("Som bloqueado pelo navegador"));
+
+            // Card Visual (Para quando a tela estiver acesa na simulação)
+            const container = document.getElementById('notification-container');
+            const card = document.createElement('div');
+            card.className = 'kirvano-notification';
+            card.innerHTML = `
+                <div class="notification-header">
+                    <div class="kirvano-app-icon">K</div>
+                    <span class="app-name">Kirvano</span>
+                    <span class="notification-time">agora</span>
+                </div>
+                <div class="notification-title">Venda Realizada! 🚀</div>
+                <div class="notification-body">
+                    Você vendeu <b>${product}</b> no valor de <span class="highlight-green">R$ ${value}</span>.
+                </div>
+            `;
+            container.appendChild(card);
+
+            // Notificação de Sistema (Para tela bloqueada real)
+            if (Notification.permission === "granted") {
+                new Notification("Kirvano: Venda Realizada! 🚀", {
+                    body: `R$ ${value} - ${product}`,
+                    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/4e/0d/914e0db2-167e-4b45-a96d-c5095d539556/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/230x0w.webp",
+                    silent: false
+                });
+            }
+
+            // Auto-remover card visual
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-10px) scale(0.95)';
+                card.style.transition = '0.5s ease-out';
+                setTimeout(() => card.remove(), 500);
+            }, 7000);
+        }
+
+        function startAutomation() {
+            const time = parseInt(document.getElementById('intervalTime').value) * 1000;
+            const total = parseInt(document.getElementById('totalSales').value);
+            
+            if (time < 1000) return alert("O intervalo mínimo é 1 segundo.");
+
+            count = 0;
+            document.getElementById('btnStart').classList.add('hidden');
+            document.getElementById('btnStop').classList.remove('hidden');
+
+            triggerSale();
+            count++;
+
+            intervalId = setInterval(() => {
+                if (count >= total) {
+                    stopAutomation();
+                    return;
+                }
+                triggerSale();
+                count++;
+            }, time);
+        }
+
+        function stopAutomation() {
+            clearInterval(intervalId);
+            document.getElementById('btnStart').classList.remove('hidden');
+            document.getElementById('btnStop').classList.add('hidden');
+        }
+
+        function showPreview() { document.getElementById('ios-preview').style.display = 'flex'; }
+        function hidePreview() { document.getElementById('ios-preview').style.display = 'none'; }
+
+        // Registo de Service Worker Mínimo para PWA no iOS
+        if ('serviceWorker' in navigator) {
+            const swCode = "self.addEventListener('fetch', function(event) {});";
+            const blob = new Blob([swCode], {type: 'text/javascript'});
+            const url = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(url);
+        }
+    </script>
+</body>
+</html>
