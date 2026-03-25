@@ -199,8 +199,8 @@
                     </div>
                 </div>
 
-                <button onclick="requestPermission()" class="w-full text-[10px] text-blue-500 mb-4 font-bold uppercase tracking-wider">
-                    <i class="fas fa-bell mr-1"></i> Passo 1: Autorizar Notificações
+                <button onclick="initAudioContext()" class="w-full text-[10px] text-blue-500 mb-4 font-bold uppercase tracking-wider">
+                    <i class="fas fa-bell mr-1"></i> Passo 1: Autorizar Notificações e Áudio
                 </button>
 
                 <button id="btnStart" onclick="startAutomation()" class="btn-primary">
@@ -230,23 +230,47 @@
         <div class="w-32 h-1 bg-white/30 mx-auto mb-3 rounded-full"></div>
     </div>
 
-    <!-- Áudio otimizado -->
-    <audio id="saleSfx" preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" type="audio/mpeg">
-    </audio>
-
     <script>
         let intervalId = null;
         let count = 0;
-        const audio = document.getElementById('saleSfx');
+        let audioCtx = null;
 
-        // FUNÇÃO CRÍTICA: Mata a sessão de média para o iOS não mostrar o widget
-        function killMediaWidget() {
+        // Inicializa o contexto de áudio (necessário clique do user)
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            Notification.requestPermission();
+            
+            // Toca um som minúsculo para ativar o canal sem widget
+            playNotificationSound();
+        }
+
+        // GERA O SOM SINTÉTICO (Sem usar ficheiro MP3, para evitar o widget)
+        function playNotificationSound() {
+            if (!audioCtx) return;
+            
+            // Reset da sessão para garantir que nada fica preso
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.playbackState = 'none';
-                // Definir metadados nulos ajuda a limpar o widget mais rápido
-                navigator.mediaSession.metadata = null;
             }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle'; // Som suave
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Nota Lá (A5)
+            osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
         }
 
         function updateTime() {
@@ -258,37 +282,15 @@
         setInterval(updateTime, 1000);
         updateTime();
 
-        async function requestPermission() {
-            const permission = await Notification.requestPermission();
-            if (permission === "granted") {
-                audio.muted = true;
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.muted = false;
-                    killMediaWidget();
-                });
-                alert("Notificações ativas!");
-            } else {
-                alert("Ative as notificações no Safari.");
-            }
-        }
-
         function triggerSale() {
             const product = document.getElementById('productName').value;
             const value = document.getElementById('saleValue').value;
             
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(() => {});
-                
-                // Força o fecho do widget logo após o som começar/terminar
-                setTimeout(killMediaWidget, 100);
-                setTimeout(killMediaWidget, 500);
-                setTimeout(killMediaWidget, 1000);
-            }
+            // Som Sintético (Não ativa widget)
+            playNotificationSound();
 
             if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
+                navigator.vibrate([80, 40, 80]);
             }
 
             // Simulação interna
@@ -308,10 +310,10 @@
             `;
             container.appendChild(card);
 
-            // Notificação de Sistema (Tela Bloqueada)
+            // Notificação de Sistema
             if (Notification.permission === "granted") {
-                new Notification("Kirvano", {
-                    body: `Venda Realizada! 🚀\nVocê vendeu ${product} no valor de R$ ${value}.`,
+                new Notification("Venda Realizada! 🚀", {
+                    body: `Você vendeu ${product} no valor de R$ ${value}.`,
                     icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/4e/0d/914e0db2-167e-4b45-a96d-c5095d539556/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/230x0w.webp",
                 });
             }
@@ -325,6 +327,10 @@
         }
 
         function startAutomation() {
+            if (!audioCtx) {
+                alert("Por favor, clique no Passo 1 primeiro.");
+                return;
+            }
             const time = parseInt(document.getElementById('intervalTime').value) * 1000;
             const total = parseInt(document.getElementById('totalSales').value);
             
@@ -349,7 +355,6 @@
             clearInterval(intervalId);
             document.getElementById('btnStart').classList.remove('hidden');
             document.getElementById('btnStop').classList.add('hidden');
-            killMediaWidget();
         }
 
         function showPreview() { document.getElementById('ios-preview').style.display = 'flex'; }
